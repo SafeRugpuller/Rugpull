@@ -8,11 +8,5 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Token is ERC20, Ownable {
     constructor(uint256 initialSupply) ERC20("Rugpull", "RUG") {
         _mint(msg.sender, initialSupply);
-        console.log(
-            "Deploying Token token with initial supply of ",
-            initialSupply,
-            " sent to ",
-            msg.sender
-        );
     }
 }

@@ -11,19 +11,19 @@ const initContract = async (id, arguments) => {
   return [contract, factory];
 };
 
+const initRugpull = async (token) => {
+  return initContract("Rugpull", token);
+};
+
 const initToken = async (initialSupply) => {
   return initContract("Token", initialSupply);
 };
 
-describe("Token", function () {
-  it("Should mint inital supply", async function () {
-    const initialSupply = 100000;
+describe("Rugpull", function () {
+  it("Should have token associated", async function () {
+    const [token] = await initToken(100000);
+    const [contract] = await initRugpull(token.address);
 
-    const [token, factory] = await initToken(initialSupply);
-
-    const signerAddress = factory.signer.getAddress();
-    expect(await token.balanceOf(signerAddress)).to.equal(
-      initialSupply.toString()
-    );
+    expect(await contract.getAssociatedToken()).to.equal(token.address);
   });
 });

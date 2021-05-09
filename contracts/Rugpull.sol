@@ -1,18 +1,46 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract Rugpull {
-    constructor() {
-        console.log("Deploying Rugpull smart contract");
+    IERC20 public associatedToken;
+
+    event Entered(address, uint256);
+
+    mapping(address => uint256) private balances;
+
+    constructor(IERC20 _token) {
+        associatedToken = _token;
     }
 
-    function enter() {}
+    function getAssociatedToken() public view returns (IERC20) {
+        return associatedToken;
+    }
 
-    function eliminate() {}
+    // Enter the rugpull
+    // Emit address and amount
+    function enterRugpull(uint256 lostMoney) public {
+        // Assert that caller has the money
+        // Assert allowance
 
-    function leave() {}
+        // Call external contract to decrement money
 
-    function getBalance() {}
+        associatedToken.transferFrom(msg.sender, address(this), lostMoney);
+    }
 
-    function getProfit() {}
+    // Eliminate a random player
+    // emit address and amount
+    function eliminatePlayer() public {}
+
+    // Leave rugpull
+    // emit address and amount
+    function leaveRugpull() public {}
+
+    // Get balance of rugpull
+    function getBalance() public {}
+
+    // Get how much you have profited
+    function getProfit() public {}
 }
