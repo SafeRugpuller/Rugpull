@@ -21,11 +21,13 @@ contract Rugpull {
 
     // Enter the rugpull
     // Emit address and amount
-    function enterRugpull(uint256 lostMoney) public {
-        // Assert that caller has the money
-        // Assert allowance
+    function enterRugpull(uint256 lostMoney) public payable {
+        require(associatedToken.balanceOf(msg.sender) >= lostMoney);
+        require(
+            associatedToken.allowance(msg.sender, address(this)) >= lostMoney
+        );
 
-        // Call external contract to decrement money
+        balances[msg.sender] += lostMoney;
 
         associatedToken.transferFrom(msg.sender, address(this), lostMoney);
     }
@@ -43,4 +45,8 @@ contract Rugpull {
 
     // Get how much you have profited
     function getProfit() public {}
+
+    function approve() public {
+        console.log("Approve");
+    }
 }
