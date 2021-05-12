@@ -31,6 +31,11 @@ interface IGAMBLE {
     function roundNo() external view returns (uint256);
 
     /**
+     * @dev Returns the ticker
+     */
+    function ticker() external view returns (uint256);
+
+    /**
      * @dev Enters the account in the game. Returns true if succeded
      */
     function enter(address account, uint256 amount) external returns (bool);
