@@ -3,8 +3,9 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract Rugpull {
+contract Rugpull is ReentrancyGuard {
     IERC20 public associatedToken;
 
     event Entered(address, uint256);
@@ -21,32 +22,25 @@ contract Rugpull {
 
     // Enter the rugpull
     // Emit address and amount
-    function enterRugpull(uint256 lostMoney) public payable {
-        require(associatedToken.balanceOf(msg.sender) >= lostMoney);
-        require(
-            associatedToken.allowance(msg.sender, address(this)) >= lostMoney
-        );
+    function enter(uint256 amount) public payable nonReentrant {
+        //require(associatedToken.balanceOf(msg.sender) >= amount);
+        associatedToken.transferFrom(msg.sender, address(this), amount);
+        balances[msg.sender] += amount;
 
-        balances[msg.sender] += lostMoney;
-
-        associatedToken.transferFrom(msg.sender, address(this), lostMoney);
+        emit Entered(msg.sender, amount);
     }
 
     // Eliminate a random player
     // emit address and amount
-    function eliminatePlayer() public {}
+    function eliminate(address account) public {}
 
     // Leave rugpull
     // emit address and amount
-    function leaveRugpull() public {}
+    function exit() public {}
 
     // Get balance of rugpull
     function getBalance() public {}
 
     // Get how much you have profited
     function getProfit() public {}
-
-    function approve() public {
-        console.log("Approve");
-    }
 }

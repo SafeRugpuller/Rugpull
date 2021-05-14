@@ -36,6 +36,42 @@ describe("Rugpull", function () {
     expect(token.transferFrom(creatorAddress, contractAddress, 100)).to.be
       .reverted;
   });
-  it("Should update balance of entered address", async function () {});
-  // it("Should transfer token from sender to contract", async function () {});
+  it("Should revert when balance too low", async function () {
+    const [token, tokenFactory] = await initToken(100000);
+    const [contract, contractFactory] = await initRugpull(token.address);
+    const creatorAddress = await tokenFactory.signer.getAddress();
+    const contractAddress = contract.address;
+    await token.approve(contractAddress, 999999999);
+
+    expect(contract.enter(100001)).to.be.reverted;
+  });
+  it("Should approve contract successfully", async function () {
+    const [token, tokenFactory] = await initToken(100000);
+    const [contract, contractFactory] = await initRugpull(token.address);
+    const creatorAddress = await tokenFactory.signer.getAddress();
+    const contractAddress = contract.address;
+    expect(token.approve(contractAddress, 1000000)).to.be.not.reverted;
+  });
+  it("Should emit event when entering", async function () {
+    const [token, tokenFactory] = await initToken(100000);
+    const [contract, contractFactory] = await initRugpull(token.address);
+    const creatorAddress = await tokenFactory.signer.getAddress();
+    const contractAddress = contract.address;
+    await token.approve(contractAddress, 999999999);
+    expect(contract.enter(5000))
+      .to.emit(contract, "Entered")
+      .withArgs(creatorAddress, 5000);
+  });
+  it("Should transfer token from sender to contract", async function () {
+    const [token, tokenFactory] = await initToken(100000);
+    const [contract, contractFactory] = await initRugpull(token.address);
+    const creatorAddress = await tokenFactory.signer.getAddress();
+    const contractAddress = contract.address;
+    await token.approve(contractAddress, 999999999);
+    expect(() => contract.enter(5000)).to.changeTokenBalance(
+      token,
+      contract,
+      5000
+    );
+  });
 });
