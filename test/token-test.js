@@ -1,29 +1,24 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-// Generic factory for initializing contract
-const initContract = async (id, arguments) => {
-  const factory = await ethers.getContractFactory(id);
-  const contract = await factory.deploy(arguments);
-
-  await contract.deployed();
-
-  return [contract, factory];
-};
-
-const initToken = async (initialSupply) => {
-  return initContract("Token", initialSupply);
-};
-
 describe("Token", function () {
+  let token;
+  let owner;
+  let supply = 1000;
+
+  beforeEach(async () => {
+    [owner] = await ethers.getSigners();
+
+    // Init token
+    const tokenFactory = await ethers.getContractFactory("Token");
+    token = await tokenFactory.deploy(supply);
+  });
+
   it("Should mint inital supply", async function () {
-    const initialSupply = 100000;
+    expect(await token.balanceOf(owner.address)).to.equal(supply);
+  });
 
-    const [token, factory] = await initToken(initialSupply);
-
-    const signerAddress = factory.signer.getAddress();
-    expect(await token.balanceOf(signerAddress)).to.equal(
-      initialSupply.toString()
-    );
+  it("should have creator as owner", async function () {
+    expect(await token.owner()).to.be.equal(owner.address);
   });
 });

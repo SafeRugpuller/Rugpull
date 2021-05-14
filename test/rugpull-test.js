@@ -22,83 +22,75 @@ const initToken = async (initialSupply) => {
 };
 
 describe("Rugpull", function () {
-  it("Should have token associated", async function () {
-    const [token] = await initToken(100000);
-    const [contract] = await initRugpull(token.address);
-    await expect(await contract.getAssociatedToken()).to.equal(token.address);
-  });
-  // Enter
-  it("Should revert when balance of allowal too low", async function () {
-    const [token, tokenFactory] = await initToken(100000);
-    const [contract, contractFactory] = await initRugpull(token.address);
-    const creatorAddress = await tokenFactory.signer.getAddress();
-    const contractAddress = contract.address;
-    await expect(token.transferFrom(creatorAddress, contractAddress, 100)).to.be
-      .reverted;
-  });
-  it("Should revert when balance too low", async function () {
-    const [token, tokenFactory] = await initToken(100000);
-    const [contract, contractFactory] = await initRugpull(token.address);
-    const creatorAddress = await tokenFactory.signer.getAddress();
-    const contractAddress = contract.address;
-    await token.approve(contractAddress, 999999999);
+  let token;
+  let contract;
+  let owner;
+  let supply = 1000;
 
-    await expect(contract.enter(100001)).to.be.reverted;
+  beforeEach(async () => {
+    [owner] = await ethers.getSigners();
+
+    // Init token
+    const tokenFactory = await ethers.getContractFactory("Token");
+    token = await tokenFactory.deploy(supply);
+
+    // Init contract
+    const contractFactory = await ethers.getContractFactory("Rugpull");
+    contract = await contractFactory.deploy(token.address);
   });
-  it("Should approve contract successfully", async function () {
-    const [token, tokenFactory] = await initToken(100000);
-    const [contract, contractFactory] = await initRugpull(token.address);
-    const creatorAddress = await tokenFactory.signer.getAddress();
-    const contractAddress = contract.address;
-    await expect(token.approve(contractAddress, 1000000)).to.be.not.reverted;
+
+  it("Should have token associated", async function () {
+    expect(await contract.associatedToken()).to.be.equal(token.address);
   });
-  it("Should emit event when entering", async function () {
-    const [token, tokenFactory] = await initToken(100000);
-    const [contract, contractFactory] = await initRugpull(token.address);
-    const creatorAddress = await tokenFactory.signer.getAddress();
-    const contractAddress = contract.address;
-    await token.approve(contractAddress, 999999999);
-    await expect(contract.enter(5000))
-      .to.emit(contract, "Entered")
-      .withArgs(creatorAddress, 5000);
+  it("Should exceed allowance", async function () {
+    await expect(
+      token.transferFrom(owner.address, contract.address, supply)
+    ).to.be.revertedWith("ERC20: transfer amount exceeds allowance");
   });
-  it("Should transfer token from sender to contract", async function () {
-    const [token, tokenFactory] = await initToken(100000);
-    const [contract, contractFactory] = await initRugpull(token.address);
-    const creatorAddress = await tokenFactory.signer.getAddress();
-    const contractAddress = contract.address;
-    await token.approve(contractAddress, 999999999);
-    await expect(() => contract.enter(5000)).to.changeTokenBalance(
-      token,
-      contract,
-      5000
+  it("Should exceed balance", async function () {
+    await expect(contract.enter(supply + 1)).to.be.revertedWith(
+      "ERC20: transfer amount exceeds balance"
     );
   });
-  it("Should not be possible to recieve ether", async function () {
-    const [token, tokenFactory] = await initToken(100000);
-    const [contract, contractFactory] = await initRugpull(token.address);
-    const creatorAddress = await tokenFactory.signer.getAddress();
-    const contractAddress = contract.address;
-
-    await expect(
-      tokenFactory.signer.sendTransaction({
-        to: contractAddress,
-        value: 100,
+  it("Should approve", async function () {
+    await expect(token.approve(contract.address, supply)).to.not.be.reverted;
+  });
+  it("Should emit Entered", async function () {
+    await token.approve(contract.address, supply);
+    await expect(contract.enter(supply))
+      .to.emit(contract, "Entered")
+      .withArgs(owner.address, supply);
+  });
+  it("Should transfer token from sender to contract", async function () {
+    await token.approve(contract.address, supply);
+    await expect(() => contract.enter(supply)).to.changeTokenBalance(
+      token,
+      contract,
+      supply
+    );
+  });
+  it("Should reject native ether", async function () {
+    expect(
+      owner.sendTransaction({
+        to: contract.address,
+        value: supply,
       })
     ).to.be.reverted;
   });
-  it("Should be reverted when exitting for a larger amount than in contract", async function () {
-    const [token, tokenFactory] = await initToken(100000);
-    const [contract, contractFactory] = await initRugpull(token.address);
-    const creatorAddress = await tokenFactory.signer.getAddress();
-    const contractAddress = contract.address;
+  it("Should reject exit", async function () {
+    await token.approve(contract.address, supply);
+    await contract.enter(supply);
 
-    await token.approve(contract, 99999);
-    await contract.enter(1000);
-
-    // await expect(() => contract.exit(2000)).to.be.revertedWith(
-    //   "Insufficient funds"
-    // );
+    expect(contract.exit(supply + 1)).to.be.revertedWith("Insufficient funds");
   });
-  it("Should exit the contract and recieve the given amount", async function () {});
+  it("Should exit the contract and recieve the given amount", async function () {
+    await token.approve(contract.address, supply);
+    await contract.enter(supply);
+
+    await expect(() => contract.exit(supply)).to.changeTokenBalance(
+      token,
+      owner,
+      supply
+    );
+  });
 });

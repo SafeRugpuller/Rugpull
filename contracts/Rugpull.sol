@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract Rugpull is ReentrancyGuard {
-    IERC20 public associatedToken;
+    IERC20 public _associatedToken;
 
     event Entered(address, uint256);
     event Exitted(address, uint256);
@@ -14,18 +14,18 @@ contract Rugpull is ReentrancyGuard {
     mapping(address => uint256) private balances;
 
     constructor(IERC20 _token) {
-        associatedToken = _token;
-        associatedToken.approve(address(this), 9999999999999);
+        _associatedToken = _token;
+        _associatedToken.approve(address(this), 9999999999999);
     }
 
-    function getAssociatedToken() public view returns (IERC20) {
-        return associatedToken;
+    function associatedToken() public view returns (IERC20) {
+        return _associatedToken;
     }
 
     // Enter the rugpull
     // Emit address and amount
     function enter(uint256 amount) public nonReentrant {
-        associatedToken.transferFrom(msg.sender, address(this), amount);
+        _associatedToken.transferFrom(msg.sender, address(this), amount);
         balances[msg.sender] += amount;
 
         emit Entered(msg.sender, amount);
@@ -39,7 +39,7 @@ contract Rugpull is ReentrancyGuard {
     // emit address and amount
     function exit(uint256 amount) public nonReentrant {
         require(balances[msg.sender] >= amount, "Insufficient funds");
-        associatedToken.transferFrom(address(this), msg.sender, amount);
+        _associatedToken.transferFrom(address(this), msg.sender, amount);
         balances[msg.sender] -= amount;
 
         emit Exitted(msg.sender, amount);
