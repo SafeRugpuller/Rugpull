@@ -9,11 +9,13 @@ contract Rugpull is ReentrancyGuard {
     IERC20 public associatedToken;
 
     event Entered(address, uint256);
+    event Exitted(address, uint256);
 
     mapping(address => uint256) private balances;
 
     constructor(IERC20 _token) {
         associatedToken = _token;
+        associatedToken.approve(address(this), 9999999999999);
     }
 
     function getAssociatedToken() public view returns (IERC20) {
@@ -22,8 +24,7 @@ contract Rugpull is ReentrancyGuard {
 
     // Enter the rugpull
     // Emit address and amount
-    function enter(uint256 amount) public payable nonReentrant {
-        //require(associatedToken.balanceOf(msg.sender) >= amount);
+    function enter(uint256 amount) public nonReentrant {
         associatedToken.transferFrom(msg.sender, address(this), amount);
         balances[msg.sender] += amount;
 
@@ -36,7 +37,13 @@ contract Rugpull is ReentrancyGuard {
 
     // Leave rugpull
     // emit address and amount
-    function exit() public {}
+    function exit(uint256 amount) public nonReentrant {
+        require(balances[msg.sender] >= amount, "Insufficient funds");
+        associatedToken.transferFrom(address(this), msg.sender, amount);
+        balances[msg.sender] -= amount;
+
+        emit Exitted(msg.sender, amount);
+    }
 
     // Get balance of rugpull
     function getBalance() public {}
